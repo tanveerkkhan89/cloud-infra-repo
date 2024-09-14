@@ -1,0 +1,80 @@
+# .github/workflows/ci_cd_pipeline.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      destroy_cluster:
+        description: 'Set to true to destroy the cluster'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TERRAFORM_VERSION: '1.9.4'
+  AWS_REGION: 'us-east-2'
+  TFVARS_FILE: 'vars.tfvars'
+  TF_WORKSPACE: 'default'
+  TERRAFORM_DIRECTORY: 'terraform'
+  CLUSTER_NAME: "example-eks-cluster"
+  VPC_ID: "vpc-02c20a702d1dc083f"
+  HELM_SCRIPT_DIRECTORY: "helm-deploy"
+jobs:
+  output_env_vars:
+    runs-on: ubuntu-latest
+    outputs:
+      TERRAFORM_VERSION: ${{ env.TERRAFORM_VERSION }}
+      AWS_REGION: ${{ env.AWS_REGION }}
+      TFVARS_FILE: ${{ env.TFVARS_FILE }}
+      TF_WORKSPACE: ${{ env.TF_WORKSPACE }}
+      TERRAFORM_DIRECTORY: ${{ env.TERRAFORM_DIRECTORY }}
+      CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+      VPC_ID: ${{ env.VPC_ID }}
+      HELM_SCRIPT_DIRECTORY: ${{ env.HELM_SCRIPT_DIRECTORY }}
+    steps:
+      - name: Set output env vars
+        run: |
+          echo "set output env vars for resuse"
+
+  deploy_infrastructure:
+    uses: tanveerkkhan89/github-actions/.github/workflows/terraform-deploy.yml@main
+    needs: output_env_vars
+    with:
+      terraform_version: ${{ needs.output_env_vars.outputs.TERRAFORM_VERSION }}
+      aws_region: ${{ needs.output_env_vars.outputs.AWS_REGION }}
+      tfvars_file: ${{ needs.output_env_vars.outputs.TFVARS_FILE }}
+      tf_workspace: ${{ needs.output_env_vars.outputs.TF_WORKSPACE }}
+      terraform_directory: ${{ needs.output_env_vars.outputs.TERRAFORM_DIRECTORY }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  alb-ingress-controller-install:
+    uses: tanveerkkhan89/github-actions/.github/workflows/helm.yml@main
+    needs: [ output_env_vars, deploy_infrastructure ]
+    with:
+      eks_cluster_name: ${{ needs.output_env_vars.outputs.CLUSTER_NAME }}
+      aws_region: ${{ needs.output_env_vars.outputs.AWS_REGION }}
+      helm_script_directory: ${{ needs.output_env_vars.outputs.HELM_SCRIPT_DIRECTORY }}
+      helm_script_name: "alb-ingress.sh"
+      helm_script_args: "${{ needs.output_env_vars.outputs.CLUSTER_NAME }} ${{ needs.output_env_vars.outputs.VPC_ID }} v2.8.2 ${{needs.output_env_vars.outputs.AWS_REGION}}"
+      # inputs are CLUSTER_NAME=$1,VPC_ID=$2,IMAGE_TAG=$3,REGION=$4
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+  infra_cleanup:
+    uses: tanveerkkhan89/github-actions/.github/workflows/terraform-deploy.yml@main
+    if: ${{ github.event.inputs.destroy_cluster == true }}
+    with:
+      terraform_version: ${{ needs.output_env_vars.outputs.TERRAFORM_VERSION }}
+      terraform_directory: ${{ needs.output_env_vars.outputs.TERRAFORM_DIRECTORY }}
+      tf_workspace: ${{ needs.output_env_vars.outputs.TF_WORKSPACE }}
+      tfvars_file: ${{ needs.output_env_vars.outputs.TFVARS_FILE }}
+      aws_region: ${{ needs.output_env_vars.outputs.AWS_REGION }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
