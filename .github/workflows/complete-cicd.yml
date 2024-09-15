@@ -67,7 +67,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
   infra_cleanup:
-    uses: tanveerkkhan89/github-reuseable-action/.github/workflows/terraform-deploy.yml@main
+    uses: tanveerkkhan89/github-reuseable-action/.github/workflows/terraform-destroy.yml
     if: ${{ github.event.inputs.destroy_cluster == true }}
     with:
       terraform_version: ${{ needs.output_env_vars.outputs.TERRAFORM_VERSION }}
