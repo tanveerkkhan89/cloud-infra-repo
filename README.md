@@ -1,47 +1,42 @@
-# Project Report: EKS Cluster with ALB Ingress Controller and CI/CD Pipeline
+# AWS EKS Cluster with ALB Ingress Controller
 
 ## Overview
 
-This project focuses on provisioning an **Amazon EKS** cluster using **Terraform**, deploying a **Java Spring Boot application** with **Helm**, and automating the entire process using a **CI/CD pipeline** via **GitHub Actions**. The architecture leverages **AWS services** like EKS, Application Load Balancer (ALB), and IAM roles with OpenID Connect (OIDC) for secure access control.
+This project focuses on provisioning essential AWS components using **Terraform**. It includes the setup of an **Amazon EKS cluster**, **VPC**, **EKS node groups**, and the deployment of an **Application Load Balancer (ALB) Ingress Controller**. The objective is to create a scalable Kubernetes environment on AWS, automating infrastructure deployment with Infrastructure as Code (IaC).
 
-## Approach
+## Infrastructure Setup
 
-1. **Infrastructure Provisioning**:
-   - The **Amazon EKS cluster** was provisioned using **Terraform**. This included setting up the necessary VPC, security groups, and subnets to ensure the cluster had the required networking components.
-   - **ALB Ingress Controller** was deployed to manage routing for external traffic to the Kubernetes cluster. The ingress controller facilitates load balancing using AWS ALB.
-   
-2. **Containerization and Deployment**:
-   - The Java Spring Boot application was containerized using **Docker**. A **Dockerfile** was created to build the image, which was then pushed to **Docker Hub**.
-   - **Helm** was used to deploy the application on the EKS cluster. This allowed easy management and scaling of Kubernetes resources.
+### 1. VPC and Networking
+- A custom **VPC** was created to provide networking for the EKS cluster. 
 
-3. **CI/CD Pipeline**:
-   - **GitHub Actions** was used to automate the infrastructure provisioning and application deployment. The pipeline included stages to build and push the Docker image, provision the EKS infrastructure, and deploy the application via Helm.
+### 2. EKS Cluster and Node Group
+- The project provisions an **Amazon EKS cluster** to run Kubernetes workloads.
+- **EKS Node Groups** were created within the cluster to provide scalable compute capacity, enabling the cluster to adjust resources based on demand.
 
-## Choices Made
+### 3. ALB Ingress Controller
+- The **ALB Ingress Controller** was deployed to manage the routing of external HTTP/HTTPS traffic to services running on the EKS cluster.
+- The controller integrates with AWS services and manages the creation and configuration of the Application Load Balancer automatically.
 
-1. **Terraform for Infrastructure as Code**:
-   - Terraform was chosen for provisioning infrastructure due to its popularity, ease of use, and the ability to define AWS resources declaratively. The decision to use modules helped in reusability and easier updates in the future.
+## Technology Choices
 
-2. **Helm for Kubernetes Deployment**:
-   - Helm was selected for managing Kubernetes resources because it simplifies the deployment process, making it easy to manage multiple Kubernetes resources as a single entity (Helm chart). Helm also facilitates rolling updates and rollback capabilities.
+### Terraform
+- **Terraform** was chosen as the Infrastructure as Code (IaC) tool for this project due to its ability to manage AWS resources declaratively. Terraform modules were used to simplify the configuration and reuse of components.
+  
+### VPC Design
+- A **custom VPC** was designed with public subnets to host both the load balancer and the EKS nodes.
 
-3. **GitHub Actions for CI/CD**:
-   - GitHub Actions was used as the CI/CD tool to automate the build, test, and deploy stages. It integrates well with GitHub repositories, enabling easy automation of workflows triggered by code changes.
+### EKS and Node Groups
+- **EKS Managed Node Groups** provide flexible compute resources for the Kubernetes cluster, enabling scaling of nodes as needed.
 
-4. **OIDC for Secure Access**:
-   - OIDC was used for **IAM role assumption** to securely allow the **ALB Ingress Controller** to access the AWS resources without hardcoding credentials, improving security and scalability.
+### ALB Ingress Controller
+- The **ALB Ingress Controller** was chosen for its deep integration with AWS, allowing dynamic load balancing of external traffic based on Kubernetes Ingress resources.
 
-## Challenges Faced
+## Challenges
 
-1. **OIDC Configuration**:
-   - Setting up **OIDC** for the ALB Ingress Controller posed challenges, particularly with understanding the structure of the identity and how to correctly refer to it within Terraform. This was mitigated by using data lookups and ensuring proper IAM role configuration.
-
-2. **Helm Chart Customization**:
-   - The Helm chart for the Java Spring Boot application required customization to ensure it met the specific needs of the EKS environment, such as Ingress configuration for the ALB. Ensuring proper configuration for seamless integration took some trial and error.
-
-3. **CI/CD Pipeline Debugging**:
-   - Integrating the pipeline was another challenge, especially ensuring that each step (Docker build, infrastructure provisioning, Helm deployment) worked seamlessly together. Misconfigurations in the pipeline required debugging and adjusting the workflow syntax.
+1. **VPC and Subnet Configuration**: Ensuring that the public subnets were correctly configured to allow the Application Load Balancer to route traffic to the EKS nodes.
+2. **ALB Ingress Controller Setup**: Ensuring that the controller had the correct IAM role and permissions to interact with AWS resources was a key step to automate load balancer management.
+3. **Terraform State Management**: Managing the Terraform state to ensure consistent infrastructure updates and deployments was critical to avoid configuration drift.
 
 ## Conclusion
 
-The project successfully automated the provisioning of an EKS cluster and the deployment of a Java Spring Boot application using Docker, Helm, and GitHub Actions. Challenges were addressed through careful planning and iterative problem-solving, resulting in a modular, maintainable, and scalable architecture.
+This project successfully automates the provisioning of key AWS components for a Kubernetes-based infrastructure. Using **Terraform**, the creation of the **VPC**, **EKS cluster**, **node groups**, and **ALB Ingress Controller** is fully automated, providing a scalable environment for Kubernetes workloads on AWS.
